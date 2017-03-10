@@ -35,10 +35,13 @@ describe JavaBuildpack::Jre::OpenJDKLike do
 
   let(:configuration) do
     { 'jre'               => jre_configuration,
-      'memory_calculator' => memory_calculator_configuration }
+      'memory_calculator' => memory_calculator_configuration,
+      'jvmkill_agent'     => jvmkill_agent_configuration }
   end
 
   let(:jre_configuration) { instance_double('jre_configuration') }
+
+  let(:jvmkill_agent_configuration) { {} }
 
   let(:memory_calculator_configuration) { { 'stack_threads' => '200' } }
 
@@ -53,6 +56,8 @@ describe JavaBuildpack::Jre::OpenJDKLike do
       .to receive(:new).with(sub_configuration_context(jre_configuration).merge(component_name: 'Stub Open JDK Like'))
     allow(JavaBuildpack::Jre::OpenJDKLikeMemoryCalculator)
       .to receive(:new).with(sub_configuration_context(memory_calculator_configuration))
+    allow(JavaBuildpack::Jre::JvmkillAgent)
+      .to receive(:new).with(sub_configuration_context(jvmkill_agent_configuration))
 
     component.sub_components context
   end
@@ -61,7 +66,7 @@ describe JavaBuildpack::Jre::OpenJDKLike do
     java_home.version = version_7
     expect(component.command).to eq('CALCULATED_MEMORY=$($PWD/.java-buildpack/open_jdk_like/bin/' \
                                     'java-buildpack-memory-calculator-0.0.0 -totMemory=$MEMORY_LIMIT' \
-                                    ' -stackThreads=200 -loadedClasses=5500 -poolType=permgen)')
+                                    ' -stackThreads=200 -loadedClasses=0 -poolType=permgen)')
 
   end
 
@@ -69,7 +74,7 @@ describe JavaBuildpack::Jre::OpenJDKLike do
     java_home.version = version_8
     expect(component.command).to eq('CALCULATED_MEMORY=$($PWD/.java-buildpack/open_jdk_like/bin/' \
                                     'java-buildpack-memory-calculator-0.0.0 -totMemory=$MEMORY_LIMIT' \
-                                    ' -stackThreads=200 -loadedClasses=5500 -poolType=metaspace)')
+                                    ' -stackThreads=200 -loadedClasses=0 -poolType=metaspace)')
 
   end
 

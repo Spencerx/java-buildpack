@@ -1,6 +1,6 @@
 # Encoding: utf-8
 # Cloud Foundry Java Buildpack
-# Copyright 2013-2017 the original author or authors.
+# Copyright 2016 the original author or authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,27 +16,31 @@
 
 require 'spec_helper'
 require 'component_helper'
-require 'java_buildpack/container/tomcat/gemfire/gemfire_log4j_jul'
+require 'java_buildpack/jre/jvmkill_agent'
 
-describe JavaBuildpack::Container::GemFireLog4jJul do
+describe JavaBuildpack::Jre::JvmkillAgent do
   include_context 'component_helper'
 
-  let(:component_id) { 'tomcat' }
-
-  it 'always detects' do
-    expect(component.detect).to eq("gem-fire-log4j-jul=#{version}")
-  end
-
-  it 'copies resources',
-     cache_fixture: 'stub-gemfire-log4j-jul.jar' do
+  it 'copies executable to bin directory',
+     cache_fixture: 'stub-jvmkill-agent' do
 
     component.compile
 
-    expect(sandbox + "lib/log4j-jul-#{version}.jar").to exist
+    expect(sandbox + "bin/jvmkill-#{version}").to exist
   end
 
-  it 'does nothing during release' do
+  it 'chmods executable to 0755',
+     cache_fixture: 'stub-jvmkill-agent' do
+
+    component.compile
+
+    expect(File.stat(sandbox + "bin/jvmkill-#{version}").mode).to eq(0o100755)
+  end
+
+  it 'adds agent parameters to the JAVA_OPTS' do
     component.release
+
+    expect(java_opts).to include('-agentpath:$PWD/.java-buildpack/jvmkill_agent/bin/jvmkill-0.0.0=printHeapHistogram=1')
   end
 
 end

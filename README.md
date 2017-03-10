@@ -26,7 +26,7 @@ The buildpack supports extension through the use of Git repository forking. The 
 Buildpack configuration can be overridden with an environment variable matching the configuration file you wish to override minus the `.yml` extension and with a prefix of `JBP_CONFIG`. It is not possible to add new configuration properties and properties with `nil` or empty values will be ignored by the buildpack. The value of the variable should be valid inline yaml, referred to as `flow style` in the yaml spec ([Wikipedia] has a good description of this yaml syntax). For example, to change the default version of Java to 7 and adjust the memory heuristics apply this environment variable to the application.
 
 ```bash
-$ cf set-env my-application JBP_CONFIG_OPEN_JDK_JRE '{ jre: { version: 1.7.0_+ }, memory_calculator: { memory_heuristics: { heap: 85, stack: 10 } } }'
+$ cf set-env my-application JBP_CONFIG_OPEN_JDK_JRE '{ jre: { version: 1.8.0_+ }, memory_calculator: { stack_threads: 200 } }'
 ```
 
 If the key or value contains a special character such as `:` it should be escaped with double quotes. For example, to change the default repository path for the buildpack.
@@ -111,8 +111,10 @@ To learn how to configure various properties of the buildpack, follow the "Confi
 * [Buildpack Modes](docs/buildpack-modes.md)
 * Related Projects
 	* [Java Buildpack Dependency Builder](https://github.com/cloudfoundry/java-buildpack-dependency-builder)
+	* [Java Buildpack Memory Calculator](https://github.com/cloudfoundry/java-buildpack-memory-calculator)
 	* [Java Test Applications](https://github.com/cloudfoundry/java-test-applications)
 	* [Java Buildpack System Tests](https://github.com/cloudfoundry/java-buildpack-system-test)
+	* [jvmkill](https://github.com/cloudfoundry/jvmkill)
 
 ## Building Packages
 The buildpack can be packaged up so that it can be uploaded to Cloud Foundry using the `cf create-buildpack` and `cf update-buildpack` commands.  In order to create these packages, the rake `package` task is used.

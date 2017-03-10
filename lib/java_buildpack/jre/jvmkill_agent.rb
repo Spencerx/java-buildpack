@@ -1,6 +1,6 @@
 # Encoding: utf-8
 # Cloud Foundry Java Buildpack
-# Copyright 2013-2017 the original author or authors.
+# Copyright 2016 the original author or authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,25 +14,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require 'fileutils'
 require 'java_buildpack/component/versioned_dependency_component'
-require 'java_buildpack/container'
-require 'java_buildpack/container/tomcat/tomcat_utils'
-require 'java_buildpack/logging/logger_factory'
+require 'java_buildpack/jre'
 
 module JavaBuildpack
-  module Container
+  module Jre
 
-    # Encapsulates the detect, compile, and release functionality for Log4j Slf4j Impl support.
-    class GemFireLog4jSlf4jImpl < JavaBuildpack::Component::VersionedDependencyComponent
-      include JavaBuildpack::Container
+    # Encapsulates the detect, compile, and release functionality for the jvmkill agent
+    class JvmkillAgent < JavaBuildpack::Component::VersionedDependencyComponent
+      include JavaBuildpack::Util
 
       # (see JavaBuildpack::Component::BaseComponent#compile)
       def compile
-        download_jar(jar_name, tomcat_lib, 'GemFire Log4j Slf4j Impl')
+        download(@version, @uri) do |file|
+          FileUtils.mkdir_p jvmkill_agent.parent
+          FileUtils.cp(file.path, jvmkill_agent)
+          jvmkill_agent.chmod 0o755
+        end
       end
 
       # (see JavaBuildpack::Component::BaseComponent#release)
-      def release; end
+      def release
+        @droplet.java_opts.add_agentpath_with_props(jvmkill_agent, 'printHeapHistogram' => '1')
+      end
 
       protected
 
@@ -43,9 +48,10 @@ module JavaBuildpack
 
       private
 
-      def jar_name
-        "log4j-slf4j-impl-#{@version}.jar"
+      def jvmkill_agent
+        @droplet.sandbox + "bin/jvmkill-#{@version}"
       end
+
     end
 
   end
