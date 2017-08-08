@@ -29,6 +29,7 @@ containers:
 # In order to use Zulu JREs instead of OpenJDK, you must comment out the OpenJDK line and uncomment the Zulu line.
 # Please see the documentation for more detail.
 jres:
+# - "JavaBuildpack::Jre::IbmJRE"
 # - "JavaBuildpack::Jre::OpenJdkJRE"
 # - "JavaBuildpack::Jre::OracleJRE"
   - "JavaBuildpack::Jre::ZuluJRE"
@@ -37,6 +38,8 @@ jres:
 # command after any Java Opts added by previous frameworks.
 frameworks:
   - "JavaBuildpack::Framework::AppDynamicsAgent"
+  - "JavaBuildpack::Framework::AspectjWeaverAgent"
+  - "JavaBuildpack::Framework::ClientCertificateMapper"
   - "JavaBuildpack::Framework::ContainerCustomizer"
   - "JavaBuildpack::Framework::ContainerSecurityProvider"
   - "JavaBuildpack::Framework::ContrastSecurityAgent"
@@ -45,7 +48,8 @@ frameworks:
   - "JavaBuildpack::Framework::DynatraceAppmonAgent"
   - "JavaBuildpack::Framework::DynatraceOneAgent"
   - "JavaBuildpack::Framework::GoogleStackdriverDebugger"
-# - "JavaBuildpack::Framework::IntroscopeAgent"
+  - "JavaBuildpack::Framework::IntroscopeAgent"
+  - "JavaBuildpack::Framework::JavaMemoryAssistant"
   - "JavaBuildpack::Framework::Jmx"
   - "JavaBuildpack::Framework::JrebelAgent"
   - "JavaBuildpack::Framework::LunaSecurityProvider"
@@ -59,5 +63,6 @@ frameworks:
   - "JavaBuildpack::Framework::SpringAutoReconfiguration"
   - "JavaBuildpack::Framework::SpringInsight"
   - "JavaBuildpack::Framework::YourKitProfiler"
+  - "JavaBuildpack::Framework::TakipiAgent"
   - "JavaBuildpack::Framework::SecurityProviders"
   - "JavaBuildpack::Framework::JavaOpts"
