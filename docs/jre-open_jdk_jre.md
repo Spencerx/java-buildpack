@@ -1,5 +1,5 @@
 # OpenJDK JRE
-The OpenJDK JRE provides Java runtimes from the [OpenJDK][] project.  Versions of Java from the `1.6`, `1.7`, and `1.8` lines are available.  Unless otherwise configured, the version of Java that will be used is specified in [`config/open_jdk_jre.yml`][].
+The OpenJDK JRE provides Java runtimes from the [OpenJDK][] project.  Unless otherwise configured, the version of Java that will be used is specified in [`config/open_jdk_jre.yml`][].
 
 <table>
   <tr>
@@ -25,9 +25,9 @@ The JRE can be configured by modifying the [`config/open_jdk_jre.yml`][] file in
 | Name | Description
 | ---- | -----------
 | `jre.repository_root` | The URL of the OpenJDK repository index ([details][repositories]).
-| `jre.version` | The version of Java runtime to use.  Candidate versions can be found in the listings for [mountainlion][] and [trusty][]. Note: version 1.8.0 and higher require the `memory_sizes` and `memory_heuristics` mappings to specify `metaspace` rather than `permgen`.
+| `jre.version` | The version of Java runtime to use.  Candidate versions can be found in the listings for [bionic][]. Note: version 1.8.0 and higher require the `memory_sizes` and `memory_heuristics` mappings to specify `metaspace` rather than `permgen`.
 | `jvmkill.repository_root` | The URL of the `jvmkill` repository index ([details][repositories]).
-| `jvmkill.version` | The version of `jvmkill` to use.  Candidate versions can be found in the listings for [mountainlion][jvmkill-mountainlion] and [trusty][jvmkill-trusty].
+| `jvmkill.version` | The version of `jvmkill` to use.  Candidate versions can be found in the listings for [bionic][jvmkill-bionic].
 | `memory_calculator` | Memory calculator defaults, described below under "Memory".
 
 ### Additional Resources
@@ -91,17 +91,6 @@ The user can change the container's total memory available to influence the JRE 
 Unless the user specifies the heap size Java option (`-Xmx`), increasing or decreasing the total memory
 available results in the heap size setting increasing or decreasing by a corresponding amount.
 
-#### Stack Threads
-
-The amount of memory that should be allocated to stacks is given as an amount of memory per
-thread with the Java option `-Xss`. If an explicit number of
-threads should be used for the calculation of stack memory, then it should be specified as in
-the following example:
-
-```yaml
-stack_threads: 500
-```
-
 #### Loaded Classes
 
 The amount of memory that is allocated to metaspace and compressed class space (or, on Java 7, the permanent generation) is calculated from an estimate of the number of classes that will be loaded. The default behaviour is to estimate the number of loaded classes as a fraction of the number of class files in the application.
@@ -110,6 +99,24 @@ If a specific number of loaded classes should be used for calculations, then it 
 ```yaml
 class_count: 500
 ```
+
+#### Headroom
+
+A percentage of the total memory allocated to the container to be left as headroom and excluded from the memory calculation.
+
+```yaml
+headroom: 10
+```
+
+#### Stack Threads
+
+The amount of memory that should be allocated to stacks is given as an amount of memory per thread with the Java option `-Xss`. If an explicit number of threads should be used for the calculation of stack memory, then it should be specified as in the following example:
+
+```yaml
+stack_threads: 500
+```
+
+Note that the default value of 250 threads is optimized for a default Tomcat configuration.  If you are using another container, especially something non-blocking like Netty, it's more appropriate to use a significantly smaller value.  Typically 25 threads would cover the needs of both the server (Netty) and the threads started by the JVM itself.
 
 #### Java Options
 
@@ -145,14 +152,12 @@ JVM Memory Configuration: -XX:MaxDirectMemorySize=10M -XX:MaxMetaspaceSize=99199
 ```
 
 [`config/open_jdk_jre.yml`]: ../config/open_jdk_jre.yml
+[bionic]: https://java-buildpack.cloudfoundry.org/openjdk/bionic/x86_64/index.yml
 [Configuration and Extension]: ../README.md#configuration-and-extension
 [Java Buildpack Memory Calculator]: https://github.com/cloudfoundry/java-buildpack-memory-calculator
-[jvmkill-mountainlion]: http://download.pivotal.io.s3.amazonaws.com/jvmkill/mountainlion/x86_64/index.yml
-[jvmkill-trusty]: http://download.pivotal.io.s3.amazonaws.com/jvmkill/trusty/x86_64/index.yml
+[jvmkill-bionic]: https://java-buildpack.cloudfoundry.org/jvmkill/bionic/x86_64/index.yml
 [Memory Calculator's README]: https://github.com/cloudfoundry/java-buildpack-memory-calculator
-[mountainlion]: http://download.pivotal.io.s3.amazonaws.com/openjdk/mountainlion/x86_64/index.yml
 [OpenJDK]: http://openjdk.java.net
 [repositories]: extending-repositories.md
-[trusty]: http://download.pivotal.io.s3.amazonaws.com/openjdk/trusty/x86_64/index.yml
 [version syntax]: extending-repositories.md#version-syntax-and-ordering
 [Volume Service]: https://docs.cloudfoundry.org/devguide/services/using-vol-services.html

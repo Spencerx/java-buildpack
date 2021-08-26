@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Cloud Foundry Java Buildpack
-# Copyright 2013-2018 the original author or authors.
+# Copyright 2013-2020 the original author or authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ module JavaBuildpack
       # @param [Properties] props to append to the +agentpath+ entry
       # @return [JavaOpts]     +self+ for chaining
       def add_agentpath_with_props(path, props)
-        add_preformatted_options "-agentpath:#{qualify_path path}=" + props.map { |k, v| "#{k}=#{v}" }.join(',')
+        add_preformatted_options "-agentpath:#{qualify_path path}=" + props.map { |k, v| v ? "#{k}=#{v}" : k }.join(',')
       end
 
       # Adds an +agentpath+ entry to the +JAVA_OPTS+. Prepends +$PWD+ to the path (relative to the droplet root) to

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Cloud Foundry Java Buildpack
-# Copyright 2013-2018 the original author or authors.
+# Copyright 2013-2020 the original author or authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,7 +27,90 @@ describe JavaBuildpack::Framework::LunaSecurityProvider do
   end
 
   context do
+    let(:vcap_services) do
+      { 'test-service-n/a' => [
+        {
+          'name' => 'luna-service', 'label' => 'luna-service-n/a',
+          'tags' => ['luna-service-tag'], 'plan' => 'luna-plan',
+          'credentials' => {
+            'client' => {
+              'certificate' => "-----BEGIN CERTIFICATE-----\ntest-client-cert\n-----END CERTIFICATE-----",
+              'private-key' => "-----BEGIN RSA PRIVATE KEY-----\ntest-client-private-key\n-----END RSA PRIVATE KEY-----"
+            },
+            'servers' => [
+              {
+                'name' => 'test-server-1',
+                'certificate' => "-----BEGIN CERTIFICATE-----\ntest-server-1-cert\n-----END CERTIFICATE-----"
+              }, {
+                'name' => 'test-server-2',
+                'certificate' => "-----BEGIN CERTIFICATE-----\ntest-server-2-cert\n-----END CERTIFICATE-----"
+              }
+            ],
+            'groups' => [{
+              'label' => 'test-group-1',
+              'members' => %w[test-group-1-member-1 test-group-1-member-2]
+            }, {
+              'label' => 'test-group-2',
+              'members' => %w[test-group-2-member-1 test-group-2-member-2]
+            }]
+          }
+        }
+      ] }
+    end
 
+    it 'detects with luna-n/a service with client, servers and groups' do
+      expect(component.detect).to eq("luna-security-provider=#{version}")
+    end
+  end
+
+  context do
+    let(:vcap_services) do
+      { 'test-service-n/a' => [
+        { 'name' => 'luna-service', 'label' => 'luna-service-n/a',
+          'tags' => ['luna-service-tag'], 'plan' => 'luna-plan',
+          'credentials' => {
+            'client' => {
+              'certificate' => "-----BEGIN CERTIFICATE-----\ntest-client-cert\n-----END CERTIFICATE-----",
+              'private-key' => "-----BEGIN RSA PRIVATE KEY-----\ntest-client-private-key\n-----END RSA PRIVATE KEY-----"
+            },
+            'servers' => [
+              {
+                'name' => 'test-server-1',
+                'certificate' => "-----BEGIN CERTIFICATE-----\ntest-server-1-cert\n-----END CERTIFICATE-----"
+              }, {
+                'name' => 'test-server-2',
+                'certificate' => "-----BEGIN CERTIFICATE-----\ntest-server-2-cert\n-----END CERTIFICATE-----"
+              }
+            ]
+          } }
+      ] }
+    end
+
+    it 'detects with luna-n/a service with client and servers' do
+      expect(component.detect).to eq("luna-security-provider=#{version}")
+    end
+  end
+
+  context do
+    let(:vcap_services) do
+      { 'test-service-n/a' => [
+        { 'name' => 'luna-service', 'label' => 'luna-service-n/a',
+          'tags' => ['luna-service-tag'], 'plan' => 'luna-plan',
+          'credentials' => {
+            'client' => {
+              'certificate' => "-----BEGIN CERTIFICATE-----\ntest-client-cert\n-----END CERTIFICATE-----",
+              'private-key' => "-----BEGIN RSA PRIVATE KEY-----\ntest-client-private-key\n-----END RSA PRIVATE KEY-----"
+            }
+          } }
+      ] }
+    end
+
+    it 'detects with luna-n/a service with just client' do
+      expect(component.detect).to eq("luna-security-provider=#{version}")
+    end
+  end
+
+  context do
     before do
       allow(services).to receive(:one_service?).with(/luna/, 'client', 'servers', 'groups').and_return(true)
 
@@ -39,19 +122,19 @@ describe JavaBuildpack::Framework::LunaSecurityProvider do
           },
           'servers' => [
             {
-              'name'        => 'test-server-1',
+              'name' => 'test-server-1',
               'certificate' => "-----BEGIN CERTIFICATE-----\ntest-server-1-cert\n-----END CERTIFICATE-----"
             }, {
-              'name'        => 'test-server-2',
+              'name' => 'test-server-2',
               'certificate' => "-----BEGIN CERTIFICATE-----\ntest-server-2-cert\n-----END CERTIFICATE-----"
             }
           ],
           'groups' => [
             {
-              'label'   => 'test-group-1',
+              'label' => 'test-group-1',
               'members' => %w[test-group-1-member-1 test-group-1-member-2]
             }, {
-              'label'   => 'test-group-2',
+              'label' => 'test-group-2',
               'members' => %w[test-group-2-member-1 test-group-2-member-2]
             }
           ]
@@ -129,8 +212,8 @@ describe JavaBuildpack::Framework::LunaSecurityProvider do
     context do
 
       let(:java_home_delegate) do
-        delegate         = JavaBuildpack::Component::MutableJavaHome.new
-        delegate.root    = app_dir + '.test-java-home'
+        delegate = JavaBuildpack::Component::MutableJavaHome.new
+        delegate.root = app_dir + '.test-java-home'
         delegate.version = JavaBuildpack::Util::TokenizedVersion.new('9.0.0')
 
         delegate
@@ -141,13 +224,13 @@ describe JavaBuildpack::Framework::LunaSecurityProvider do
 
         component.compile
 
-        expect(additional_libraries).to include(droplet.sandbox + 'jsp/LunaProvider.jar')
+        expect(root_libraries).to include(droplet.sandbox + 'jsp/LunaProvider.jar')
       end
 
       it 'adds JAR to classpath during release in Java 9' do
         component.release
 
-        expect(additional_libraries).to include(droplet.sandbox + 'jsp/LunaProvider.jar')
+        expect(root_libraries).to include(droplet.sandbox + 'jsp/LunaProvider.jar')
       end
 
       it 'adds does not add extension directory in Java 9' do
@@ -159,7 +242,75 @@ describe JavaBuildpack::Framework::LunaSecurityProvider do
     end
 
     context do
-      let(:configuration) { { 'logging_enabled' => true, 'ha_logging_enabled' => true } }
+
+      let(:environment) { { 'LUNA_CONF_HTTP_URL' => 'http://foo.com' } }
+      let(:conf_files) { described_class.instance_variable_get(:@conf_files) }
+
+      it 'sets LUNA_CONF_HTTP_URL env var to download config files from',
+         cache_fixture: 'stub-luna-security-provider.tar' do
+
+        config_files = %w[Chrystoki.conf server-certificates.pem]
+
+        config_files.each do |file|
+          uri = "http://foo.com/#{file}"
+          allow(application_cache).to receive(:get).with(uri)
+          stub_request(:head, uri)
+            .with(headers: { 'Accept' => '*/*', 'Host' => 'foo.com', 'User-Agent' => 'Ruby' })
+            .to_return(status: 200, body: '', headers: {})
+        end
+        component.compile
+      end
+
+    end
+
+    context do
+      let(:environment) { { 'LUNA_CONF_HTTP_URL' => 'https://foo.com/' } }
+
+      it 'sets LUNA_CONF_HTTP_URL env var to download config files over HTTPS',
+         cache_fixture: 'stub-luna-security-provider.tar' do
+
+        config_files = %w[Chrystoki.conf server-certificates.pem]
+
+        config_files.each do |file|
+          uri = "https://foo.com/#{file}"
+          allow(application_cache).to receive(:get).with(uri)
+          allow(Net::HTTP).to receive(:start).with('foo.com', 443, use_ssl: true).and_call_original
+          stub_request(:head, uri)
+            .with(headers: { 'Accept' => '*/*', 'Host' => 'foo.com', 'User-Agent' => 'Ruby' })
+            .to_return(status: 200, body: '', headers: {})
+        end
+        component.compile
+      end
+    end
+
+    context do
+      let(:environment) { { 'LUNA_CONF_HTTP_URL' => 'https://user:pass@foo.com' } }
+
+      it 'sets LUNA_CONF_HTTP_URL env var to download config files over HTTPS with Basic Auth',
+         cache_fixture: 'stub-luna-security-provider.tar' do
+
+        config_files = %w[Chrystoki.conf server-certificates.pem]
+
+        config_files.each do |file|
+          allow(application_cache).to receive(:get).with("https://user:pass@foo.com/#{file}")
+          allow(Net::HTTP).to receive(:start).with('foo.com', 443, use_ssl: true).and_call_original
+          stub_request(:head, "https://foo.com/#{file}")
+            .with(headers: { 'Accept' => '*/*', 'Host' => 'foo.com', 'User-Agent' => 'Ruby',
+                             'Authorization' => 'Basic dXNlcjpwYXNz' })
+            .to_return(status: 200, body: '', headers: {})
+        end
+        component.compile
+      end
+    end
+
+    context do
+      let(:configuration) do
+        {
+          'logging_enabled' => true,
+          'ha_logging_enabled' => true,
+          'tcp_keep_alive_enabled' => false
+        }
+      end
 
       it 'writes configuration',
          cache_fixture: 'stub-luna-security-provider.tar' do
@@ -169,6 +320,26 @@ describe JavaBuildpack::Framework::LunaSecurityProvider do
         expect(sandbox + 'Chrystoki.conf').to exist
         check_file_contents(sandbox + 'Chrystoki.conf',
                             'spec/fixtures/framework_luna_security_provider_logging/Chrystoki.conf')
+      end
+    end
+
+    context do
+      let(:configuration) do
+        {
+          'logging_enabled' => true,
+          'ha_logging_enabled' => true,
+          'tcp_keep_alive_enabled' => true
+        }
+      end
+
+      it 'writes configuration with client tcp keep alive',
+         cache_fixture: 'stub-luna-security-provider.tar' do
+
+        component.compile
+
+        expect(sandbox + 'Chrystoki.conf').to exist
+        check_file_contents(sandbox + 'Chrystoki.conf',
+                            'spec/fixtures/framework_luna_security_provider_tcp_keep_alive/Chrystoki.conf')
       end
     end
 

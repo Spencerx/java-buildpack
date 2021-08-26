@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Cloud Foundry Java Buildpack
-# Copyright 2013-2018 the original author or authors.
+# Copyright 2013-2020 the original author or authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,7 +32,11 @@ module JavaBuildpack
       #
       # @param [Hash] context a collection of utilities used the component
       def initialize(context)
-        super(context)
+        @application    = context[:application]
+        @component_name = self.class.to_s.space_case
+        @configuration  = context[:configuration]
+        @droplet        = context[:droplet]
+
         @version, @uri = agent_download_url if supports?
         @logger        = JavaBuildpack::Logging::LoggerFactory.instance.get_logger DynatraceOneAgent
       end
@@ -65,6 +69,7 @@ module JavaBuildpack
         manifest = agent_manifest
 
         @droplet.java_opts.add_agentpath(agent_path(manifest))
+        @droplet.java_opts.add_preformatted_options('-Xshare:off')
 
         dynatrace_environment_variables(manifest)
       end
@@ -86,24 +91,32 @@ module JavaBuildpack
 
       DT_CONNECTION_POINT = 'DT_CONNECTION_POINT'
 
-      DT_HOST_ID = 'DT_HOST_ID'
-
       DT_TENANT = 'DT_TENANT'
 
       DT_TENANTTOKEN = 'DT_TENANTTOKEN'
 
+      DT_LOGSTREAM = 'DT_LOGSTREAM'
+
+      DT_NETWORK_ZONE = 'DT_NETWORK_ZONE'
+
       ENVIRONMENTID = 'environmentid'
 
-      FILTER = /dynatrace/
+      FILTER = /dynatrace/.freeze
+
+      NETWORKZONE = 'networkzone'
 
       SKIP_ERRORS = 'skiperrors'
 
-      private_constant :APIURL, :APITOKEN, :DT_APPLICATION_ID, :DT_CONNECTION_POINT, :DT_HOST_ID, :DT_TENANT,
-                       :DT_TENANTTOKEN, :ENVIRONMENTID, :FILTER, :SKIP_ERRORS
+      private_constant :APIURL, :APITOKEN, :DT_APPLICATION_ID, :DT_CONNECTION_POINT, :DT_NETWORK_ZONE, :DT_LOGSTREAM,
+                       :DT_TENANT, :DT_TENANTTOKEN, :ENVIRONMENTID, :FILTER, :NETWORKZONE, :SKIP_ERRORS
 
       def agent_download_url
         download_uri = "#{api_base_url(credentials)}/v1/deployment/installer/agent/unix/paas/latest?include=java" \
-                       "&bitness=64&Api-Token=#{credentials[APITOKEN]}"
+                       '&bitness=64' \
+                       "&Api-Token=#{credentials[APITOKEN]}"
+
+        download_uri += "&networkzone=#{networkzone}" if networkzone?
+
         ['latest', download_uri]
       end
 
@@ -143,7 +156,8 @@ module JavaBuildpack
           .add_environment_variable(DT_CONNECTION_POINT, endpoints(manifest))
 
         environment_variables.add_environment_variable(DT_APPLICATION_ID, application_id) unless application_id?
-        environment_variables.add_environment_variable(DT_HOST_ID, host_id) unless host_id?
+        environment_variables.add_environment_variable(DT_NETWORK_ZONE, credentials[NETWORKZONE]) if networkzone?
+        environment_variables.add_environment_variable(DT_LOGSTREAM, 'stdout') unless logstream?
       end
 
       def endpoints(manifest)
@@ -164,12 +178,16 @@ module JavaBuildpack
         end
       end
 
-      def host_id
-        "#{@application.details['application_name']}_${CF_INSTANCE_INDEX}"
+      def networkzone
+        credentials[NETWORKZONE]
       end
 
-      def host_id?
-        @application.environment.key?(DT_HOST_ID)
+      def networkzone?
+        credentials.key?(NETWORKZONE)
+      end
+
+      def logstream?
+        @application.environment.key?(DT_LOGSTREAM)
       end
 
       def skip_errors?
@@ -185,8 +203,6 @@ module JavaBuildpack
         FileUtils.mv(root + 'agent', @droplet.sandbox)
         FileUtils.mv(root + 'manifest.json', @droplet.sandbox)
       end
-
     end
-
   end
 end

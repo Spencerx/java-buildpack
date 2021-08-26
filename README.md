@@ -21,10 +21,10 @@ The following are _very_ simple examples for deploying the artifact types that w
 * [Spring Boot CLI](docs/example-spring_boot_cli.md)
 
 ## Configuration and Extension
-The buildpack default configuration can be overridden with an environment variable matching the configuration file you wish to override minus the `.yml` extension and with a prefix of `JBP_CONFIG`. It is not possible to add new configuration properties and properties with `nil` or empty values will be ignored by the buildpack (in this case you will have to extend the buildpack, see below). The value of the variable should be valid inline yaml, referred to as "flow style" in the yaml spec ([Wikipedia][] has a good description of this yaml syntax). For example, to change the default version of Java to 7 and adjust the memory heuristics apply this environment variable to the application.
+The buildpack default configuration can be overridden with an environment variable matching the configuration file you wish to override minus the `.yml` extension and with a prefix of `JBP_CONFIG`. It is not possible to add new configuration properties and properties with `nil` or empty values will be ignored by the buildpack (in this case you will have to extend the buildpack, see below). The value of the variable should be valid inline yaml, referred to as "flow style" in the yaml spec ([Wikipedia][] has a good description of this yaml syntax). For example, to change the default version of Java to 11 and adjust the memory heuristics apply this environment variable to the application.
 
 ```bash
-$ cf set-env my-application JBP_CONFIG_OPEN_JDK_JRE '{ jre: { version: 1.7.0_+ }, memory_calculator: { stack_threads: 200 } }'
+$ cf set-env my-application JBP_CONFIG_OPEN_JDK_JRE '{ jre: { version: 11.+ }, memory_calculator: { stack_threads: 25 } }'
 ```
 
 If the key or value contains a special character such as `:` it should be escaped with double quotes. For example, to change the default repository path for the buildpack.
@@ -36,7 +36,13 @@ $ cf set-env my-application JBP_CONFIG_REPOSITORY '{ default_repository_root: "h
 If the key or value contains an environment variable that you want to bind at runtime you need to escape it from your shell. For example, to add command line arguments containing an environment variable to a [Java Main](docs/container-java_main.md) application.
 
 ```bash
-$ cf set-env my-application JBP_CONFIG_JAVA_MAIN '{ arguments: "-server.port=\$PORT -foo=bar" }'
+$ cf set-env my-application JBP_CONFIG_JAVA_MAIN '{ arguments: "--server.port=9090 --foo=bar" }'
+```
+
+An example of configuration is to specify a `javaagent` that is packaged within an application.
+
+```bash
+$ cf set-env my-application JAVA_OPTS '-javaagent:app/META-INF/myagent.jar -Dmyagent.config_file=app/META-INF/my_agent.conf'
 ```
 
 Environment variable can also be specified in the applications `manifest` file. For example, to specify an environment variable in an applications manifest file that disables Auto-reconfiguration.
@@ -74,19 +80,22 @@ The buildpack supports extension through the use of Git repository forking. The 
 * Standard Frameworks
   * [AppDynamics Agent](docs/framework-app_dynamics_agent.md) ([Configuration](docs/framework-app_dynamics_agent.md#configuration))
   * [AspectJ Weaver Agent](docs/framework-aspectj_weaver_agent.md) ([Configuration](docs/framework-aspectj_weaver_agent.md#configuration))
+  * [Checkmarx IAST Agent](docs/framework-checkmarx_iast_agent.md) ([Configuration](docs/framework-checkmarx_iast_agent.md#configuration))
   * [Client Certificate Mapper](docs/framework-client_certificate_mapper.md) ([Configuration](docs/framework-client_certificate_mapper.md#configuration))
   * [Container Customizer](docs/framework-container_customizer.md) ([Configuration](docs/framework-container_customizer.md#configuration))
   * [Container Security Provider](docs/framework-container_security_provider.md) ([Configuration](docs/framework-container_security_provider.md#configuration))
   * [Contrast Security Agent](docs/framework-contrast_security_agent.md) ([Configuration](docs/framework-contrast_security_agent.md#configuration))
+  * [DataDog](docs/framework-datadog_javaagent.md) ([Configuration](docs/framework-datadog_javaagent.md#configuration)
   * [Debug](docs/framework-debug.md) ([Configuration](docs/framework-debug.md#configuration))
-  * [Dyadic EKM Security Provider](docs/framework-dyadic_ekm_security_provider.md) ([Configuration](docs/framework-dyadic_ekm_security_provider.md#configuration))
-  * [Dynatrace Appmon Agent](docs/framework-dynatrace_appmon_agent.md) ([Configuration](docs/framework-dynatrace_appmon_agent.md#configuration))
+  * [Elastic APM Agent](docs/framework-elastic_apm_agent.md) ([Configuration](docs/framework-elastic_apm_agent.md#configuration))
   * [Dynatrace SaaS/Managed OneAgent](docs/framework-dynatrace_one_agent.md) ([Configuration](docs/framework-dynatrace_one_agent.md#configuration))
   * [Google Stackdriver Debugger](docs/framework-google_stackdriver_debugger.md) ([Configuration](docs/framework-google_stackdriver_debugger.md#configuration))
+  * [Google Stackdriver Profiler](docs/framework-google_stackdriver_profiler.md) ([Configuration](docs/framework-google_stackdriver_profiler.md#configuration))
   * [Introscope Agent](docs/framework-introscope_agent.md) ([Configuration](docs/framework-introscope_agent.md#configuration))
   * [JaCoCo Agent](docs/framework-jacoco_agent.md) ([Configuration](docs/framework-jacoco_agent.md#configuration))
   * [Java Memory Assistant](docs/framework-java_memory_assistant.md) ([Configuration](docs/framework-java_memory_assistant.md#configuration))
   * [Java Options](docs/framework-java_opts.md) ([Configuration](docs/framework-java_opts.md#configuration))
+  * [JProfiler Profiler](docs/framework-jprofiler_profiler.md) ([Configuration](docs/framework-jprofiler_profiler.md#configuration))
   * [JRebel Agent](docs/framework-jrebel_agent.md) ([Configuration](docs/framework-jrebel_agent.md#configuration))
   * [JMX](docs/framework-jmx.md) ([Configuration](docs/framework-jmx.md#configuration))
   * [Luna Security Provider](docs/framework-luna_security_provider.md) ([Configuration](docs/framework-luna_security_provider.md#configuration))
@@ -96,15 +105,21 @@ The buildpack supports extension through the use of Git repository forking. The 
   * [New Relic Agent](docs/framework-new_relic_agent.md) ([Configuration](docs/framework-new_relic_agent.md#configuration))
   * [PostgreSQL JDBC](docs/framework-postgresql_jdbc.md) ([Configuration](docs/framework-postgresql_jdbc.md#configuration))
   * [ProtectApp Security Provider](docs/framework-protect_app_security_provider.md) ([Configuration](docs/framework-protect_app_security_provider.md#configuration))
+  * [Riverbed AppInternals Agent](docs/framework-riverbed_appinternals_agent.md) ([Configuration](docs/framework-riverbed_appinternals_agent.md#configuration))
+  * [Sealights Agent](docs/framework-sealights_agent.md) ([Configuration](docs/framework-sealights_agent.md#configuration))
+  * [Seeker Security Provider](docs/framework-seeker_security_provider.md) ([Configuration](docs/framework-seeker_security_provider.md#configuration))
   * [Spring Auto Reconfiguration](docs/framework-spring_auto_reconfiguration.md) ([Configuration](docs/framework-spring_auto_reconfiguration.md#configuration))
   * [Spring Insight](docs/framework-spring_insight.md)
+  * [SkyWalking Agent](docs/framework-sky_walking_agent.md) ([Configuration](docs/framework-sky_walking_agent.md#configuration))
   * [Takipi Agent](docs/framework-takipi_agent.md) ([Configuration](docs/framework-takipi_agent.md#configuration))
   * [YourKit Profiler](docs/framework-your_kit_profiler.md) ([Configuration](docs/framework-your_kit_profiler.md#configuration))
 * Standard JREs
   * [Azul Zulu](docs/jre-zulu_jre.md) ([Configuration](docs/jre-zulu_jre.md#configuration))
+  * [GraalVM](docs/jre-graal_vm_jre.md) ([Configuration](docs/jre-graal_vm_jre.md#configuration))
   * [IBM® SDK, Java™ Technology Edition](docs/jre-ibm_jre.md) ([Configuration](docs/jre-ibm_jre.md#configuration))
   * [OpenJDK](docs/jre-open_jdk_jre.md) ([Configuration](docs/jre-open_jdk_jre.md#configuration))
   * [Oracle](docs/jre-oracle_jre.md) ([Configuration](docs/jre-oracle_jre.md#configuration))
+  * [SapMachine](docs/jre-sap_machine_jre.md) ([Configuration](docs/jre-sap_machine_jre.md#configuration))
 * [Extending](docs/extending.md)
   * [Application](docs/extending-application.md)
   * [Droplet](docs/extending-droplet.md)
@@ -143,10 +158,21 @@ Creating build/java-buildpack-cfd6b17.zip
 The offline package is a version of the buildpack designed to run without access to a network.  It packages the latest version of each dependency (as configured in the [`config/` directory][]) and [disables `remote_downloads`][]. This package is about 180M in size.  To create the offline package, use the `OFFLINE=true` argument:
 
 To pin the version of dependencies used by the buildpack to the ones currently resolvable use the `PINNED=true` argument. This will update the [`config/` directory][] to contain exact version of each dependency instead of version ranges.
-
 ```bash
 $ bundle install
 $ bundle exec rake clean package OFFLINE=true PINNED=true
+...
+Creating build/java-buildpack-offline-cfd6b17.zip
+```
+
+Only packages referenced in the [`config/components.yml` file](config/components.yml) will be cached. Additional packages may be added using the `ADD_TO_CACHE` argument. The value of `ADD_TO_CACHE` should be set to the name of a `.yml` file in the [`config/` directory][] with the `.yml` file extension omitted (e.g. `sap_machine_jre`). Multiple file names may be separated by commas. This is useful to add additional JREs. These additional components will not be enabled by default and must be explicitly enabled in the application with the `JBP_CONFIG_COMPONENTS` environment variable.
+
+```bash
+$ bundle install
+$ bundle exec rake clean package OFFLINE=true ADD_TO_CACHE=sap_machine_jre,ibm_jre
+...
+Caching https://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/java/8.0.6.26/linux/x86_64/ibm-java-jre-8.0-6.26-x86_64-archive.bin
+Caching https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.10/sapmachine-jre-11.0.10_linux-x64_bin.tar.gz
 ...
 Creating build/java-buildpack-offline-cfd6b17.zip
 ```
@@ -160,6 +186,14 @@ $ bundle exec rake clean package VERSION=2.1
 ...
 Creating build/java-buildpack-2.1.zip
 ```
+
+### Packaging Caveats
+
+1. When pinning versions, only the default JRE version is pinned. There is [special handling to package additional versions of a JRE](https://github.com/cloudfoundry/java-buildpack/blob/main/rakelib/dependency_cache_task.rb#L128-L144) and the way this works, it will pick the latest version at the time you package not at the time of the version's release.
+2. The `index.yml` file for a dependencie is packaged in the buildpack cache when building offline buildpacks. The `index.yml` file isn't versioned with the release, so if you package an offline buildpack for an older release, it will pull the current `index.yml`, not the one from the time of the release. This can result in errors if a user tells the buildpack to install the latest version of a default dependency, because the latest version is calculated from the `index.yml` file which has more recent versions than what are packaged in the offline buildpack. Because of #1, this only impacts the default JRE. Non-default JREs always package the most recent version, which is also the most recent version in `index.yml` at the time you package the offline buildpack.
+3. Because of #1 and #2, it is not present to accurately reproduce packages of the buildpack, after releases have been cut. If building pinning or offline buildpacks, it is suggested to build them as soon as possible after a release is cut and save the produced artifact.
+
+See [#892](https://github.com/cloudfoundry/java-buildpack/issues/892#issuecomment-880212806) for additional details.
 
 ## Running Tests
 To run the tests, do the following:
@@ -189,6 +223,6 @@ This buildpack is released under version 2.0 of the [Apache License][].
 [Play Framework]: http://www.playframework.com
 [pull request]: https://help.github.com/articles/using-pull-requests
 [Pull requests]: http://help.github.com/send-pull-requests
-[Running Cloud Foundry locally]: http://docs.cloudfoundry.org/deploying/boshlite/index.html
+[Running Cloud Foundry locally]: https://github.com/cloudfoundry/cf-deployment/tree/master/iaas-support/bosh-lite
 [Spring Boot]: http://projects.spring.io/spring-boot/
 [Wikipedia]: https://en.wikipedia.org/wiki/YAML#Basic_components_of_YAML

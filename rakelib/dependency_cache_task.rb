@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Cloud Foundry Java Buildpack
-# Copyright 2013-2018 the original author or authors.
+# Copyright 2013-2020 the original author or authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-$LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
+$LOAD_PATH.unshift File.expand_path('../lib', __dir__)
 
 require 'java_buildpack/logging/logger_factory'
 require 'java_buildpack/repository/version_resolver'
@@ -48,11 +48,11 @@ module Package
 
     private
 
-    ARCHITECTURE_PATTERN = /\{architecture\}/
+    ARCHITECTURE_PATTERN = /\{architecture\}/.freeze
 
-    DEFAULT_REPOSITORY_ROOT_PATTERN = /\{default.repository.root\}/
+    DEFAULT_REPOSITORY_ROOT_PATTERN = /\{default.repository.root\}/.freeze
 
-    PLATFORM_PATTERN = /\{platform\}/
+    PLATFORM_PATTERN = /\{platform\}/.freeze
 
     private_constant :ARCHITECTURE_PATTERN, :DEFAULT_REPOSITORY_ROOT_PATTERN, :PLATFORM_PATTERN
 
@@ -109,7 +109,13 @@ module Package
     end
 
     def component_ids
-      configuration('components').values.flatten.map { |component| component.split('::').last.snake_case }
+      conf = configuration('components').values.flatten.map { |component| component.split('::').last.snake_case }
+      offline_cache = ENV['ADD_TO_CACHE']
+      unless offline_cache.nil?
+        offline_cache = offline_cache.split(',')
+        (conf << offline_cache).flatten!.uniq!
+      end
+      conf
     end
 
     def configuration(id)
@@ -122,6 +128,21 @@ module Package
       if repository_configuration?(configuration)
         configuration['component_id']     = component_id
         configuration['sub_component_id'] = sub_component_id if sub_component_id
+
+        if component_id == 'open_jdk_jre' && sub_component_id == 'jre'
+          c1 = configuration.clone
+          c1['version'] = '11.+'
+
+          configurations << c1
+        end
+
+        if component_id == 'open_jdk_jre' && sub_component_id == 'jre'
+          c1 = configuration.clone
+          c1['version'] = '16.+'
+
+          configurations << c1
+        end
+
         configurations << configuration
       else
         configuration.each { |k, v| configurations << configurations(component_id, v, k) if v.is_a? Hash }
@@ -182,7 +203,7 @@ module Package
     def pin_version(old_configuration, version)
       component_id     = old_configuration['component_id']
       sub_component_id = old_configuration['sub_component_id']
-      rake_output_message "Pinning #{sub_component_id ? sub_component_id : component_id} version to #{version}"
+      rake_output_message "Pinning #{sub_component_id || component_id} version to #{version}"
       configuration_to_update = JavaBuildpack::Util::ConfigurationUtils.load(component_id, false, true)
       update_configuration(configuration_to_update, version, sub_component_id)
       JavaBuildpack::Util::ConfigurationUtils.write(component_id, configuration_to_update)
